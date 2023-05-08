@@ -1,0 +1,2891 @@
+
+#tek seferde birden fazla döküman eklemek için
+POST _bulk
+{"index":{"_index":"blogposts","_id":"1"}}
+{"title":"Introduction to elasticsearch", "content":"Elasticsearch is a distributed, open source search and analytics engine for all types od data,..", "publised_date":"2020-01-02", "tags":["elasticsearch","distributed","storage"], "no_of_likes": 21, "status":"published"}
+{"index":{"_index":"blogposts","_id":"2"}}
+{"title":"Why is Elasticsearch fast?", "content":"It is able to achieve fast search respondses because, instead of searching the text directly, it searches an index instead",  "tags":["elasticsearch","fast","index"], "no_of_likes": 10, "status":"draft"}
+{"index":{"_index":"blogposts","_id":"3"}}
+{"title":"Introducting the New React DevTools", "content":"We are excited to announce a new release of the React  Developer Tools, avaliable today in Chrome, Firefox, and(Chromium) Edge", "publised_date":"2019-08-25", "tags":["react","DevTools"], "no_of_likes": 2, "status":"published"}
+{"index":{"_index":"blogposts","_id":"4"}}
+{"title":"Angular Tools for High Performance over time", "content":"This post, contains a list of new tools and practices that can help us build faster Angular apps and monitor their performance over time", "publised_date":"2014-03-22", "tags":["Angular","Performance","fast"], "no_of_likes": 35, "status":"published"}
+{"index":{"_index":"blogposts","_id":"5"}}
+{"title":"The new features in Java 14", "content":"Oracle on September 17 said switch expressions are expected to go final in Java Development Kit 14(JDK 14).", "publised_date":"2019-07-20", "tags":["java"], "no_of_likes": 11}
+{"index":{"_index":"blogposts","_id":"6"}}
+{"title":"Thread behavior in the JVM", "content":"Threating refers to the practice of executing programing processes councurrently to improve application performance", "tags":["java","jvm"], "no_of_likes": 3, "status":"draft"}
+
+
+#blogposts indexindeki tüm dökümanlar
+GET blogposts/_search
+
+#elasticsearch içeren dokummanlar harfe duyarsız
+GET blogposts/_search?q=elasticsearch
+
+
+#contentinde elasticsearch içeren tüm dökümanlar
+GET blogposts/_search?q=content:elasticsearch
+#java performance içeren tüm docler her ikisini içermesine gerek yok 2 sinden
+# biri varsada gelir
+GET blogposts/_search?q=java performance
+
+
+#search işlemini aşağıdaki gibi yapcaz yukarıdaki gibi değil
+#title ında elasticsearch içeren tüm documanalrı getirir harfe duyarsız
+GET blogposts/_search
+{
+  
+  "query":{
+    
+    "match": {
+      "title": "elasticsearch"
+    }
+  }
+  
+}
+
+#tüm docler gelcek
+GET /blogposts/_search
+
+{
+  "query":{
+    
+    "match_all": {}
+    }
+  }
+  
+  
+}
+
+#title ve tags de elasticsearch içeren docler gelcek harfe duyarsız yani farketmez
+#küçük büyük harf olması
+GET /blogposts/_search
+{
+  "query": {
+    
+    "multi_match": {
+      "query": "elasticsearch",
+      "fields": ["title","tags"]
+    }
+  }
+}
+
+#java , performance kelimelerinden birini bile içeriyorsa gelicek
+GET /blogposts/_search
+{
+  "query": {
+    "match": {
+      "content": "java performance"
+    }
+  }
+}
+
+
+
+#contentinde java performance içeren gelcek 2 kelimeninde içermesi gerekiyor
+GET /blogposts/_search
+{
+  "query": {
+    "match_phrase": {
+      "content": "java performance"
+    }
+  }
+}
+
+#contentinde performance içeren ve title ında angular içermeyen documanlar
+
+GET /blogposts/_search
+{
+  "query": {
+    
+    "bool": {
+      
+      "must": [
+        {
+          "match": {
+            "content": "performance"
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "match": {
+            "title": "angular"
+          }
+        }
+      ]
+    }
+  }
+  
+}
+
+
+#should zorunlu değil olsada olur olmasada olur title ında angular içermeyip
+#contentinde performance içerip title ında react içeren bir doc olsaydı gelirdi
+GET /blogposts/_search
+{
+  "query": {
+    
+    "bool": {
+      
+      "must": [
+        {
+          "match": {
+            "content": "performance"
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "match": {
+            "title": "angular"
+          }
+        }
+      ],
+      "should": [
+        {
+          "match": {
+            "title": "react"
+          }
+        }
+      ]
+    }
+  }
+  
+}
+
+
+
+#tags inde elasticsearch içeren no_of_likes ı 20 den fazla olan doc
+GET /blogposts/_search
+{
+  "query": {
+    "bool": {
+      
+      "must": [
+        {
+          "match": {
+            "tags": "elasticsearch"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "range": {
+            "no_of_likes": {
+              "gte": 20
+              
+            }
+          }
+        }
+      ]
+      
+    }
+  }
+}
+
+#blogposts indexinin bilgileri için
+GET /blogposts
+
+
+
+DELETE /blogposts
+
+
+
+
+
+
+#manuel index oluşturduk aşağıdaki ayarlarla
+PUT /blogposts
+{
+  "settings": {
+    
+    "number_of_shards": 1,
+    "number_of_replicas": 0
+  }
+}
+
+#indexin  sadece settings bilgilerini almak için
+GET /blogposts/_settings
+
+#number_of_replicaz değerini her zaman için güncelleyebiliriz ama number of shards değerini güncelleyemeyiz
+PUT /blogposts/_settings
+{
+  "number_of_replicas": 1
+}
+
+#indexin mapping ini vermek için hangi field hangi tipte olcak
+PUT /blogposts/_mapping
+{
+  "properties":{
+    
+    "title":{"type":"text"},
+    "content":{"type":"text"},
+    "published_date":{"type":"date"}
+  }
+}
+
+#indexin sadece mapping bilgilerini almak için
+GET blogposts/_mapping
+
+#eksta fieldlar map etmek için
+PUT /blogposts/_mapping
+{
+  "properties":{
+    
+    "tags":{"type":"text"},
+    "no_of_likes":{"type":"long"},
+    "status":{"type":"date"}
+  }
+}
+
+#daha önce map ettiğimiz bir fieldın tipini değiştiremeyiz likes long tipindeydi bunu texte çeviremeyiz
+
+PUT /blogposts/_mapping
+{
+  "properties":{
+    "no_of_likes":{"type":"text"}
+ 
+  }
+}
+
+#daha önce map ettiğin bir field için analyzerını da belirleyemezsin
+PUT /blogposts/_mapping
+{
+  "properties":{
+    
+    "content":{"type":"text","analyzer":"simple"}
+  }
+}
+  
+
+# index oluşturma 
+
+PUT /blogposts
+{
+  "settings": {
+    
+    "number_of_shards": 1,
+    "number_of_replicas": 1
+  },
+  "mappings": {
+    
+    "properties": {
+      
+      "title":{"type":"text"},
+      "content":{"type":"text","analyzer":"simple"},
+      "published_date":{"type":"date"},
+      "tags":{"type":"text"},
+      "no_of_likes":{"type":"long"},
+      "status":{"type":"date"}
+      
+      
+      
+    }
+  }
+  
+}
+
+#kendi analyzerımızı tanımlamak için
+#char_filter a istediğimiz kadar filtreleme ekleyebiliriz
+#standard tokenizer boşluğa yada noktalama işaretine göre split ediyor kelimeleri
+#filterda da bir lowercase i kullandık
+# kendi custom analyzerımızı kullandık content field ı için
+PUT /blogposts
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        
+        "my_custom_analyzer":{
+          
+          "type":"custom",
+          "char_filter":["html_strip"],
+          "tokenizer":"standard",
+          "filter":["lowercase"]
+        }
+      }
+    }
+  }
+  ,
+  "mappings": {
+    
+    
+    "properties": {
+      
+      "title":{"type":"text"},
+      "content":{"type":"text","analyzer":"my_custom_analyzer"},
+      "published_date":{"type":"date"},
+      "tags":{"type":"text"},
+      "no_of_likes":{"type":"long"},
+      "status":{"type":"date"}
+      
+      
+      
+    }
+  }
+
+}
+
+GET /blogposts
+
+
+POST /blogposts/_analyze
+{
+  "analyzer": "my_custom_analyzer",
+  "text": "this is HTML <p>word</p>"
+}
+
+#csutom tokenizer char field ve token filterımızı oluşturma
+
+PUT /blogposts
+{
+  "settings": {
+    
+    "analysis": {
+      "analyzer": {
+        "my_custom_analyzer":{
+          "type":"custom",
+          "tokenizer":"punctuation",
+          "char_filter":["symbol"],
+          "filter":["my_stop","lowercase"]
+          
+        }
+      },
+      "tokenizer": {
+        "punctuation":{
+          "type":"pattern",
+          "pattern":"[.,!? ]"
+        }
+      },
+      "char_filter": {
+        "symbol":{
+          "type":"mapping",
+          "mappings":[
+            "& => and",":) => happy",":( => sad"
+          ]
+        }
+      },
+      "filter": {
+        "my_stop":{
+          "type":"stop",
+          "stopwords": "_english_"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "title":{"type":"text"},
+      "content":{"type":"text","analyzer":"my_custom_analyzer"},
+      "published_date":{"type":"date"},
+      "tags":{"type":"text"},
+      "no_of_likes":{"type":"long"},
+      "status":{"type":"date"}
+    }
+  }
+}
+
+
+POST /blogposts/_analyze
+{
+  "analyzer": "my_custom_analyzer",
+  "text": "Big Data Processing with Spark & Scala :)"
+  
+}
+
+POST /blogposts/_analyze
+{
+  "analyzer": "my_custom_analyzer",
+  "text": "Big Data Proc,essing with Spark & Scala :)"
+  
+}
+
+DELETE /blogposts
+
+
+
+POST _analyze
+{
+  "tokenizer": "ngram",
+  "text": "Search"
+}
+
+
+PUT /ngram_index
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "n_gram_analyzer":{
+          "tokenizer":"n_gram_tokenizer"
+          
+        }
+      },
+      "tokenizer": {
+        "n_gram_tokenizer":{
+          "type":"ngram",
+          "min_gram":2,
+          "max_gram":3
+          
+          
+        }
+        
+      }
+    }
+  }
+}
+
+POST /ngram_index/_analyze
+{
+  "analyzer": "n_gram_analyzer",
+  "text": "Search"
+  
+}
+
+DELETE /ngram_index
+
+PUT /ngram_index
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "n_gram_analyzer":{
+          "tokenizer":"n_gram_tokenizer"
+          
+        }
+      },
+      "tokenizer": {
+        "n_gram_tokenizer":{
+          "type":"edge_ngram",
+          "min_gram":2,
+          "max_gram":6
+          
+          
+        }
+        
+      }
+    }
+  }
+}
+
+POST /ngram_index/_analyze
+{
+  "analyzer": "n_gram_analyzer",
+  "text": "Search"
+  
+}
+
+#3.ders
+
+DELETE /blogposts
+
+
+#indexi oluşturalım
+# kendi analyzerı ızı oluşturduk bu analyzerı kullanan fieldlar için (content ,title) 
+#kelimeler noktalama işaretlerine göre( ,.?! boşluk) karakterlerine göre split edilcek
+# "& => and",":) => happy",":( => sad" e dönüşcek
+# ingilizcedeki stop wordler kaldırılcak (a an is the with ...)
+# ve karakterler küçük harfe çevrilcek
+
+PUT /blogposts
+{
+  "settings": {
+    
+    "analysis": {
+      "analyzer": {
+        "my_custom_analyzer":{
+          "type":"custom",
+          "tokenizer":"punctuation",
+          "char_filter":["symbol"],
+          "filter":["my_stop","lowercase"]
+          
+        }
+      },
+      "tokenizer": {
+        "punctuation":{
+          "type":"pattern",
+          "pattern":"[.,!? ]"
+        }
+      },
+      "char_filter": {
+        "symbol":{
+          "type":"mapping",
+          "mappings":[
+            "& => and",":) => happy",":( => sad"
+          ]
+        }
+      },
+      "filter": {
+        "my_stop":{
+          "type":"stop",
+          "stopwords": "_english_"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "title":{"type":"text","analyzer":"my_custom_analyzer"},
+      "content":{"type":"text","analyzer":"my_custom_analyzer"},
+      "published_date":{"type":"date"},
+      "tags":{"type":"keyword"},
+      "no_of_likes":{"type":"long"},
+      "status":{"type":"keyword"}
+    }
+  }
+}
+
+POST _bulk
+{ "index" : { "_index" : "blogposts", "_id" : "1" } }
+{ "title" : "Introduction to elasticsearch", "content" : "Elasticsearch is a distributed, open source search and analytics engine for all types of data", "published_date" : "2020-01-02", "tags" : ["elasticsearch", "distributed", "storage" ], "no_of_likes" : 21, "status" : "published" }
+{ "index" : { "_index" : "blogposts", "_id" : "2" } }
+{ "title" : "Why is Elasticsearch fast?", "content" : "It is able to achieve fast search responses because, instead of searching the text directly, it searches an index instead", "tags" : ["elasticsearch", "fast", "index" ], "no_of_likes" : 10,"status" : "draft"}
+{ "index" : { "_index" : "blogposts", "_id" : "3" } }
+{ "title" : "Introducing the New React DevTools", "content" : "We are excited to announce a new release of the React Developer Tools, available today in Chrome, Firefox, and (Chromium) Edge", "published_date" : "2019-08-25", "tags" : ["react", "devtools" ], "no_of_likes" : 2, "status" : "published"}
+{ "index" : { "_index" : "blogposts", "_id" : "4" } }
+{ "title" : "Angular Tools for High Performance", "content" : "This post, contains a list of new tools and practices that can help us build faster Angular apps and monitor their performance over time", "published_date" : "2014-03-22", "tags" : ["angular", "performance","fast"], "no_of_likes" : 35, "status" : "published"}
+{ "index" : { "_index" : "blogposts", "_id" : "5" } }
+{ "title" : "The new features in Java 14", "content" : "Oracle on September 17 said switch expressions are expected to go final in Java Development Kit 14 (JDK 14). ", "published_date" : "2019-07-20", "tags" : ["java"], "no_of_likes" : 11, "status" : "published"}
+{ "index" : { "_index" : "blogposts", "_id" : "6" } }
+{ "title" : "Thread behavior in the JVM", "content" : "Threading refers to the practice of executing programming processes concurrently to improve application performance.", "tags" : ["java","jvm"], "no_of_likes" : 3, "status" : "draft"}
+{ "index" : { "_index" : "blogposts", "_id" : "7" } }
+{ "title" : "Stacks and Queues", "content" : "The main operations of a stack are push, pop, & isEmpty and for queue enqueue, dequeue, & isEmpty., ", "published_date" : "2016-12-12", "tags" : ["stack","queue","datastructures"], "no_of_likes" : 43, "status" : "published"}
+{ "index" : { "_index" : "blogposts", "_id" : "8" } }
+{ "title" : "How are big data and ai changing the business world?","content" : "Today’s businesses are ruled by data. Specifically, big data and AI that have gradually been evolving to shape day-to-day business processes and playing as the key driver in business Intelligence decision-making","published_date" : "2020-01-01","tags" :["big data","ai"],"no_of_likes" :120,"status" : "published"}
+{ "index" : { "_index" : "blogposts", "_id" : "9" } }
+{ "title" : "Hash Tables", "content" : "A hash table is a data structure used to implement symbol table (associative array), a structure that can map keys to values", "published_date" : "2017-08-12", "tags" :[ "hash", "datastructures" ], "no_of_likes" :13, "status" : "published" }
+{ "index" : { "_index" : "blogposts", "_id" : "10" } }
+{ "title" : "Go vs Python: How to choose", "content" : "Python and Go share a reputation for being convenient to work with. Both languages have a simple and straightforward syntax and a small and easily remembered feature set", "tags" :[ "go", "python" ], "no_of_likes" :134, "status" : "draft" }
+{ "index" : { "_index" : "blogposts", "_id" : "11" } }
+{ "title" : "Android Studio 4.0 backs native UI toolkit", "content" : "Now available in a preview release, the Android Studio 4.0 ‘Canary’ upgrade works with the JetPack Compose UI toolkit and improves Java 8 support", "tags" :[ "android", "nativeui" ], "no_of_likes" :113, "status" : "draft" }
+{ "index" : { "_index" : "blogposts", "_id" : "12" } }
+{ "title" : "JSON tools you don’t want to miss", "content" : "Developers can choose from many great free and online tools for JSON formatting, validating, editing, and converting to other formats", "published_date" : "2018-02-13", "tags" :[ "json" ], "no_of_likes" :23, "status" : "published" }
+{ "index" : { "_index" : "blogposts", "_id" : "13" } }
+{ "title" : "Get started with method references in Java", "content" : "Use method references to simplify functional programming in Java", "tags" :[ "java", "references" ], "no_of_likes" :102, "status" : "draft" }
+{ "index" : { "_index" : "blogposts", "_id" : "14" } }
+{ "title" : "How to choose a database for your application", "content" : "From performance to programmability, the right database makes all the difference. Here are 12 key questions to help guide your selection", "published_date" : "2009-02-12", "tags" :[ "database" ], "no_of_likes" :229, "status" : "published" }
+{ "index" : { "_index" : "blogposts", "_id" : "15" } }
+{ "title" : "10 reasons to Learn Scala Programming Language", "content" : "One of the questions my reader often ask me is, shall I learn Scala? Does Scala has a better future than Java, or why Java developer should learn Scala and so on", "published_date" : "2009-02-12", "tags" :[ "scala", "language" ], "no_of_likes" :136, "status" : "draft" }
+{ "index" : { "_index" : "blogposts", "_id" : "16" } }
+{ "title" : "ways to declare and initialize Two-dimensional (2D) String and Integer Array in Java", "content" : "Declaring a two-dimensional array is very interesting in Java as Java programming language provides many ways to declare a 2D array and each one of them has some special things to learn about", "published_date" : "2009-02-12", "tags" :[ "jaava", "datastructure", "array" ], "no_of_likes" :342, "status" : "published" }
+{ "index" : { "_index" : "blogposts", "_id" : "17" } }
+{ "title" : "Hibernate Tip: How to customize the association mappings using a composite key", "content" : "Hibernate provides lots of mapping features that allow you to map complex domain and table models. But the availability of these features doesn't mean that you should use them in all of your applications", "tags" :[ "hibernate", "compositekey" ], "no_of_likes" :112, "status" : "draft" }
+{ "index" : { "_index" : "blogposts", "_id" : "18" } }
+{ "title" : "Getting started with Python on Spark", "content" : "At my current project I work a lot with Apache Spark and running PySpark jobs on it.", "tags" :[ "python", "spark" ], "no_of_likes" :86, "status" : "draft" }
+{ "index" : { "_index" : "blogposts", "_id" : "19" } }
+{ "title" : "Relationship between IOT, big data, and cloud computing", "content" : "Big data analytics is the basis of decision making in an organization. It involves the examination of a large number of data sets in order to identify the hidden patterns that result in their existence.", "published_date" : "2018-11-10", "tags" :[ "iot", "big data", "cloud computing" ], "no_of_likes" :12, "status" : "published" }
+{ "index" : { "_index" : "blogposts", "_id" : "20" } }
+{ "title" : "Get started with lambda expressions in Java", "content" : "Learn how to use lambda expressions and functional programming techniques in your Java programs.", "tags" :[ "java", "lambda", "functional programming" ], "no_of_likes" :128, "status" : "draft" }
+{ "index" : { "_index" : "blogposts", "_id" : "21" } }
+{ "title" : "Securing access to our Elasticsearch Service deployment", "content" : "Before we configure all of our systems to send data to our Elasticsearch Service deployment", "published_date" : "2019-11-16", "tags" :[ "elasticsearch", "deployment" ], "no_of_likes" :100, "status" : "published" }
+{ "index" : { "_index" : "blogposts", "_id" : "22" } }
+{ "title" : "Using parallel Logstash pipelines to improve persistent queue throughput", "content" : "By default, Logstash uses in-memory bounded queues between pipeline stages (inputs → pipeline workers) to buffer events", "published_date" : "2019-11-20", "tags" :[ "elasticsearch", "logstash" ], "no_of_likes" :110, "status" : "published" }
+{ "index" : { "_index" : "blogposts", "_id" : "23" } }
+{ "title" : "Boosting the power of Elasticsearch with synonyms", "content" : "Using synonyms is undoubtedly one of the most important techniques in a search engineer's tool belt.", "published_date" : "2019-11-28", "tags" :[ "elasticsearch", "synonyms" ], "no_of_likes" :235, "status" : "published" }
+{ "index" : { "_index" : "blogposts", "_id" : "24" } }
+{ "title" : "How to keep Elasticsearch synchronized with a relational database using Logstash and JDBC", "content" : "Using synonyms is undoubtedly one of the most important techniques in a search engineer's tool belt.", "tags" :[ "elasticsearch", "database", "logstash", "jdbc" ], "no_of_likes" :153, "status" : "draft" }
+{ "index" : { "_index" : "blogposts", "_id" : "25" } }
+{ "title" : "Monitoring Kafka with Elasticsearch, Kibana, and Beats", "content" : "We first posted about monitoring Kafka with Filebeat in 2016. Since the 6.5 release, the Beats team has been supporting a Kafka module.", "tags" :[ "elasticsearch", "kibana", "Beats", "Kafka" ], "no_of_likes" :117, "status" : "draft" }
+{ "index" : { "_index" : "blogposts", "_id" : "26" } }
+{ "title" : "Defending your organization with the Elastic Stack", "content" : "Does your team analyze security data with the Elastic Stack? If so, come check out Elastic SIEM, the first big step in building our vision of what a SIEM should be.", "published_date" : "2019-11-28", "tags" :[ "elasticsearch", "elastic stack", "siem" ], "no_of_likes" :145, "status" : "published" }
+{ "index" : { "_index" : "blogposts", "_id" : "27" } }
+{ "title" : "What Is Elasticsearch – Getting Started With No Constraints Search Engine", "content" : "In today’s IT world, a voluminous amount of data sizing approx 2.5 Quintillion bytes is generated every day.,", "published_date" : "2019-11-28", "tags" :[ "elasticsearch", "search engine" ], "no_of_likes" :174, "status" : "published" }
+{ "index" : { "_index" : "blogposts", "_id" : "28" } }
+{ "title" : "Why the Rust language is on the rise", "content" : "Rust may not be easy to learn, but developers love the speed, the tools, the ‘guard rails,‘ and the community.,", "published_date" : "2019-11-28", "tags" :[ "rust", "language" ], "no_of_likes" :15, "status" : "published" }
+{ "index" : { "_index" : "blogposts", "_id" : "29" } }
+{ "title" : "Machine learning algorithms explained", "content" : "Machine learning uses algorithms to turn a data set into a predictive model. Which algorithm works best depends on the problem.,", "tags" :[ "machine learning", "algorithms" ], "no_of_likes" :156, "status" : "draft" }
+{ "index" : { "_index" : "blogposts", "_id" : "30" } }
+{ "title" : "Java tip: When to use composition vs inheritance", "content" : "There's more than one way to establish relationships between classes.,", "tags" :[ "Java", "composition", "inheritance" ], "no_of_likes" :443, "status" : "draft" }
+{ "index" : { "_index" : "blogposts", "_id" : "31" } }
+{ "title" : "Building Great User Experiences with Concurrent Mode and Suspense", "content" : "At React Conf 2019 we announced an experimental release of React that supports Concurrent Mode and Suspense..,", "published_date" : "2019-01-18", "tags" :[ "react" ], "no_of_likes" :167, "status" : "published" }
+{ "index" : { "_index" : "blogposts", "_id" : "32" } }
+{ "title" : "React v16.8: The One With Hooks", "content" : "Hooks let you use state and other React features without writing a class. You can also build your own Hooks to share reusable stateful logic between components..,", "published_date" : "2019-01-18", "tags" :[ "react", "hooks" ], "no_of_likes" :184, "status" : "published" }
+
+
+
+
+# title da elasticsearch içeren ilk 5 döküman için
+
+GET /blogposts/_search
+{
+  "query": {
+    
+    "match": {
+      "title": "elasticsearch"
+    }
+  },
+  "size": 5
+  
+}
+
+#toplamda 32 döküman var bu indexte tamamını görüntülemek için ama varsayılan olarak size 10 olduğu için
+#ilk 10 döküman #listeleniyor bunun için size ı 32 yapabilriiz
+#google da bir arama yaptığında da ilk 10 site geliyor
+GET /blogposts/_search 
+{
+  "query": {
+    
+    "match_all": {}
+      
+  },
+  "size": 32
+  
+}
+
+#ilk dokuman documan 0 oluyor sonraki documan1 bu şekilde
+#ben 21.dokumandan 30.dokumana kadar olan dokumanları görüntülemek istiyorsam
+#from ifadesini kullancam varsayılan olarak 0
+#0 olduğu zaman ilk yani 1. dökumandan(idsi 1 olan) başlayarak getiriyor
+#ben 21.dokumandan itibaren getirmesini yani idsi 21 ve 30 olan dokumanları istiyorsam
+GET /blogposts/_search
+{
+  "query": {
+    
+    "match_all": {}
+      
+  },
+  "size": 10,
+  "from": 20
+  
+}
+
+
+# ilk 10 dokumanın sadece title ve content filedlarını istiyorsak
+#documanın tüm filedları çıktıda _source fieldındaydı _source fieldını kullanrak 
+#çıktıdaki fieldları limitleyebiliriz
+GET /blogposts/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "_source": ["title","content"]
+}
+
+# source a  *ti* , ten yazsaydıkda aynı çıktı gelirdi çünkü ti title da içeriyo bu şekilde
+#joker karakterleri de kullnabiliriz
+#bu ne işe yarıcak diyelimki name ve lastname adında filedların var sadece *name* yazarsan iki field da gelir
+#bu durumlarda kullanılabilir
+GET /blogposts/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "_source": ["*ti*","*tent*"]
+}
+
+
+
+#status field ı hariç tüm fieldları görüntülemek istiyorsam
+# excludes kullancam
+GET /blogposts/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "_source":{
+    "excludes": "status"
+  }
+}
+
+#çıktıdaki dökümanlar score a göre sıralanıyor
+#ama ben likes sayısına(başka bir fielda göre) sıralnamasını istiyorsam sort kullancam
+#sort kullanmam içinde fieldın type ı keyword olmalı no_of_likes ın type ı keyword dü
+GET /blogposts/_search
+{
+  "query": {
+    "match": {
+      "title": "java"
+    }
+  },
+  "sort": [
+    {
+      "no_of_likes": {
+        "order": "desc"
+      }
+    }
+  ]
+}
+
+#peki title a göre sıralamak istersem
+#title ın type sadece text keyword değil 
+#ben bu field için sort işlemi yapamam o yüzden indexi tanımlarken mapping kısmında title 
+#için extra field eklicem
+
+DELETE /blogposts
+
+#peki title a göre sıralamak istersem
+#title ın type sadece text keyword değil 
+#ben bu field için sort işlemi yapamam o yüzden indexi tanımlarken mapping kısmında title 
+#için extra field eklicem
+#
+PUT /blogposts
+{
+  "settings": {
+    
+    "analysis": {
+      "analyzer": {
+        "my_custom_analyzer":{
+          "type":"custom",
+          "tokenizer":"punctuation",
+          "char_filter":["symbol"],
+          "filter":["my_stop","lowercase"]
+          
+        }
+      },
+      "tokenizer": {
+        "punctuation":{
+          "type":"pattern",
+          "pattern":"[.,!? ]"
+        }
+      },
+      "char_filter": {
+        "symbol":{
+          "type":"mapping",
+          "mappings":[
+            "& => and",":) => happy",":( => sad"
+          ]
+        }
+      },
+      "filter": {
+        "my_stop":{
+          "type":"stop",
+          "stopwords": "_english_"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "title":{"type":"text","analyzer":"my_custom_analyzer",
+        "fields": {"keyword":{
+          "type":"keyword"
+        }
+        }
+      },
+      "content":{"type":"text","analyzer":"my_custom_analyzer"},
+      "published_date":{"type":"date"},
+      "tags":{"type":"keyword"},
+      "no_of_likes":{"type":"long"},
+      "status":{"type":"keyword"}
+    }
+  }
+}
+
+#şimdi title a göre sıralayabiliriz
+# text dokuman oludğu için z den a ya göre sıralıcak
+GET /blogposts/_search
+{
+  "query": {
+    "match": {
+      "title": "java"
+    }
+  },
+  "sort": [
+    {
+      "title.keyword": {
+        "order": "desc"
+      }
+    }
+  ]
+}
+
+#peki title ları eşit olan için nasıl bir sıralama yapcak 
+#tek başına sort işlemini yaparsak score u hesaplamıyor elasticsearch score null oluyor
+#title  lar eşitse score a göre sıralamasını istiyoruz
+
+GET /blogposts/_search
+{
+  "query": {
+    "match": {
+      "title": "java"
+    }
+  },
+  "sort": [
+    {
+      "title.keyword": {
+        "order": "desc"
+      }
+    },
+    {
+      "_score":{
+        "order": "desc"
+      }
+    }
+  ]
+
+  
+}
+
+#
+#titleında Introduction to elasticsearch olan documnaı istiyorsak
+#query dsl oluyo bu
+#Introduction to elasticsearch my_custom_analyzer ile şu halde tutuluyor inverted indexte
+#introduction elasticsearch
+#bu yüzden titleında elasticsearch olan yada introduciton olan dokumanalr geliyor#documanlar da gelcek
+GET /blogposts/_search
+{
+  "query": {
+    "match": {
+      "title": "Introduction to elasticsearch"
+    }
+  }
+}
+
+#titleda ikisinin de olamsını istiyorsak yani elasticsearch ve introduction ikisi beraber title da bulunan
+#documanları istiyorsak and operatorunu kullancaz
+#inverted indexteki tüm kelimelerin olamsı gerekcek ()
+GET /blogposts/_search
+{
+  "query": {
+    "match": {
+      "title": {
+        "query": "Introduction to elasticsearch",
+        "operator": "and"
+      }
+    }
+  }
+}
+
+#inverted indexteki haliyle en az 2 kelime eşleşen documanlar için
+#yani 3 kelimeli bir query olsun inverted indexte ab bc de olark bulunsun
+# benim documanımdaki title da olan text bu 3 kelimeden en az 2 tanesini içermeli demek
+GET /blogposts/_search
+{
+  "query": {
+    "match": {
+      "title": {
+        "query": "Introduction to elasticsearch",
+        "minimum_should_match": 2
+      }
+    }
+  }
+}
+
+
+# statusu published olan ve title introcution to elasticsearch olan docleri istiyorsak
+# 2 işlem var bu yüzden bool kullancaz 
+#statusu published olan için filter kullancaz çünkü exact values bu
+
+GET /blogposts/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        
+        {
+          "match": {
+            "title": "Introduction to elasticsearch"
+          }
+          
+        }
+      ],
+      "filter": [
+        {
+          "term": {
+            "status": "published"
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+
+# bu şekilde title da react olan varsa da gelcek çünkü
+#sorgudaki ifade(React) match kullandığı için analzerdan geçiyor ve react a donuşuyor
+#documandaki tüm title ifadeside analyzer dan geçiyor ve küçük harfe dönüşüyor bu yüzden çıktıda
+#küçük harfle react olanda gelcek REACT olanda REAct olanda çünkü harflerin hepsi küçük harfe
+#dönüştürülüyor querydeki  React ifadeside match kullandığımız için küçük harfe dönüyor
+# ve 2 tarafta küçük harf olduğu için eşleşiyolar
+GET /blogposts/_search
+{
+  "query": {
+    "match": {
+      "title": "React"
+    }
+  }
+}
+
+
+#match kullandığında querydeki ifade analyzer dan geçiyor
+#yani React kelimesi react oluyor ve çıktıda React da olsa geliyo react da olsa geliyo
+#çünkü title  field ı analyzer dan geçiyor title da React varsa oda react oluyor
+#ama term ifadesini kullanırsak o zaman analyzerdan geçmiyor
+#React React olarak kalıyor
+# aşağıdaki şekilde eşleşir çünkü 
+#documandaki title daki field analzerdan geçiyrodu React olan  react oluyordu
+#sorgudaki de küçük harflerle react olduğu için eşleşti
+GET /blogposts/_search
+{
+  "query": {
+    "term": {
+      "title": {
+        "value": "react"
+      }
+    }
+  }
+}
+
+
+#aşağıdaki gibi eşleşmez
+#çünkü sorguda React dedik ama title fieldında react var
+
+GET /blogposts/_search
+{
+  "query": {
+    "term": {
+      "title": {
+        "value": "React"
+      }
+    }
+  }
+}
+
+
+# filter da term kullandığımız için term de yazzdığımız ifade elasticsearch olduğu gibi
+#kalır analyzer dan geçmez yani ne yazdıysak o  yani elasticsearch olur 
+# taginde elasticsearch içeren docler gelir
+#query de tags: Elasticsearch deseydik ozman gelemzdi
+#çünkü tags fieldı analyzerdan geçmiyor kelime ne ise o olarak kalıyor
+#yani  doucmandaki tag de de elasticsearch yazmalı querydeki ne ise 
+#documandakide o olmalı
+GET /blogposts/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "term": {
+            "tags": "elasticsearch"
+          }
+        }
+      ]
+    }
+  }
+}
+
+#taginde elasticsearch ve java içeren docleri istersek terms kullancaz
+#çıktıda yine 2 sinden biri olsada gelcek yani sadece java olsada gelcek
+GET /blogposts/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "terms": {
+            "tags": [
+              "elasticsearch",
+              "java"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
+
+#title da elasticsearch içeren
+#status u draft olmayan
+# en az 100 like ve 20 nov 2019 dan sonra publish edilen 
+# ve react la ilgili olsa hoş olur documanalar neler
+#birden fazla query gerkeli olduğu için bool kullancaz 
+#must must_not filter ve should a ihtiyacımız var
+# elasticsearch içeren ler için exact valuese ihtiycımız yok yani ne yazdıysak o gelsin değil
+#o yüzden match kullnacaz
+#şimdi must_not da status u draft olamyanı istiyoz burada exact value kullancaz
+#bu yüzdende term kullancaz
+#100 likes tan fazla like sahip documanlar ve published date i 2019 dan büyük olanlar için için filter ve range kullancaz 
+#tek bir field ı filtreliceksek arraye gerek yok ama birden fazla filtreleme için arraya ihtyiaç var
+#performans açısından hangi filtre sonucunda daha az dokuman kalır diyorsan önce onu yazcan çünkü önce o filtreleme çalışıyor
+#örneğin soyadı asdwds olanı önce yazcan cinsiyeti erkek olan filtrelemeden
+#soyadı asdw olan 20 kayıt varsa
+# cinsiyeti erkek olan 200 kayıt olsun
+#bu yüzden önce soyadı filtresini çalıştırcaz
+#zorunlu olmdağu için should kullancaz react da
+GET /blogposts/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "title": "elasticsearch"
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "term": {
+            "status": {
+              "value": "draft"
+            }
+          }
+        }
+      ],
+      "filter": [
+        {
+          "range": {
+            "no_of_likes": {
+              "gte": 100
+            }
+          }
+        },
+        {
+          "range": {
+            "published_date": {
+              "gte": "2019-11-20"
+            }
+          }
+        }
+      ],
+      "should": [
+        {
+          "match": {
+            "tags": "react"
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+
+#sadece must_not ı kullanırsak score tanımlanmıyor
+# 0 oluyor aynı filter gibi
+GET /blogposts/_search
+{
+  "query": {
+    "bool": {
+      "must_not": [
+        {
+          "term": {
+            "status": {
+              "value": "draft"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+#yazdığımız query nin doğru olup olmadığını nasıl anlarız
+#çok fazla query iç içe yazdığımızda yanlışlıklar artabilir
+#doğruysa çıktıda valid true olur yanlışsa valid false olur
+GET /blogposts/_validate/query
+{
+   "query": {
+    "filter": {
+      "must_not": [
+        {
+          "term": {
+            "status": {
+              "value": "draft"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+#eğer neden yanlış olduğunu anlamak istiyorsan ekstra olarak ?explain kullancan
+#ozamna hatanın açıklaması gelcek
+
+GET /blogposts/_validate/query?explain
+{
+   "query": {
+    "filter": {
+      "must_not": [
+        {
+          "term": {
+            "status": {
+              "value": "draft"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+
+# eğer introcution to elasticsearch olan titleları arıyorsak
+# ve introcution un ilk pozisyonda 2.pozisyonda to nun 3.pozisyondada elasticsearch ün olmasını istiyorsak
+#match_phrase kullancaz
+# match_phraser daki ifade de analyzer dan geçmiyor yani ne yazdıysak o
+#aşağıdaki sorgu sonucunda 1 documan döncek title ı Introduction to elasticsearch olan
+#aşağıdaki ifade de introduction pozisyon 0 da elasticsearch pozisyon 2 de 
+#orjinal dokumanda introduction pozisyon 0 da elasticsearch pozisyon 2 de bu yüzden eşleşçek
+GET /blogposts/_search
+{
+  "query": {
+    "match_phrase": {
+      "title": "Introduction to elasticsearch"
+    }
+  }
+}
+
+# to yu kaldırırsak çıktıda hiçbir documan gelmicek
+#çünkü ilk pozisyonda introcution olup ikinci pozisyonda elasticsearch olan hiçbir dokuman yok
+#orjinal dokumanda introduction pozisyon 0 da elasticsearch pozisyon 2 de 
+#aşağıdaki ifade de introduction pozisyon 0 da elasticsearch pozisyon 1 de
+#eşleşmediği için çıktıda gelmicek
+GET /blogposts/_search
+{
+  "query": {
+    "match_phrase": {
+      "title": "Introduction elasticsearch"
+    }
+  }
+}
+
+#daha iyi anlamak için analyzer a bakalım title daki ifadeyle
+#tokenlarda şu şekilde olcak
+#introcution pozisyonu 0
+#elasticsaerch posziyonu 2 olcak
+# buda demek oluyoki ard arda gelmiyor bu kelimeler
+POST /blogposts/_analyze
+{
+  "text": "Introduction to elasticsearch",
+  "analyzer": "my_custom_analyzer"
+}
+
+#bunun önüne slop kullanarak geçebiliriz
+#documanımdak title da Introduction to elasticsearch ifadesi var
+# introduction 0 to 1 elasticsearch 2 .pozisyonda
+#query de introduction elasticsearch ifadesi var
+#introduction 0 elasticsearch 1 .pozisyonda bu şekilde eşleşmiyolar
+#ama slop kullanarak elasticsearch kendi pozisyonundan 1 pozisyon ileri giderek 2.pozisyona geliyor ve
+#eşleşiyolar eşleşmesi için doc deki pozisyonlarda aynı olmalı query de bulunan kelimeler
+GET /blogposts/_search
+{
+  "query": {
+    "match_phrase": {
+      "title": {
+        "query": "Introduction elasticsearch",
+        "slop": 1
+      }
+    }
+  }
+}
+
+#title da elast ifadesini içeren docler için prefix kullancaz
+GET /blogposts/_search
+{
+  "query": {
+    "prefix": {
+      "title": {
+        "value": "elast"
+      }
+    }
+  }
+}
+
+
+#Elast yazarsak gelmicek çünkü titledaki tüm ifade küçükharfe çevrilmiş 
+#ama biz queryde büyük harfle E yazmışız Elast yazmışız çıktıda hiçbir documan gelmez
+#çünkü prefixteki ifade analyzerdan geçmiyor olduğu gibi kalıyor
+GET /blogposts/_search
+{
+  "query": {
+    "prefix": {
+      "title": {
+        "value": "elast"
+      }
+    }
+  }
+}
+
+#ki ile başlayıp a ile biten title da kelimelre sahip documanalrı istersem
+#wildcard kullancam
+GET /blogposts/_search
+{
+  "query": {
+    "wildcard": {
+      "title": {
+        "value": "ki*a"
+      }
+    }
+  }
+}
+#yine aynı şekil queryde büyük harfle yazarsak çıktıda gelmicek
+GET /blogposts/_search
+{
+  "query": {
+    "wildcard": {
+      "title": {
+        "value": "Kİ*A"
+      }
+    }
+  }
+}
+
+
+#search ederken bir kelime yazınca extra yanına kelimeler öneriyor
+#bunu match_phrase_prefix kullnarak yapıcaz
+#aynı match_phrase_prefix gibi davranıyor
+# title angular tools ile başlayan docleri getiriyor
+#highlights da 
+GET /blogposts/_search
+{
+  "query": {
+    "match_phrase_prefix": {
+      "title": "Angular Tools"
+    }
+  },
+  "highlight": {"fields": {
+    "title": {}
+  }}
+}
+
+#published_date i null olmayan documanları istiyorsam
+GET /blogposts/_search
+{
+  "query": {
+    "exists": {
+      "field":"published_date"
+    }
+  }
+}
+
+
+
+#title ında veya contentine elasticsearch içeren documanlar gelcek
+#hem titleında hemde contentinde elasticsaech içerenin score u büyük olcak ve 
+#başta gelcek
+GET /blogposts/_search
+{
+  
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match": {
+            "content": {
+              "query": "elasticsearch"
+              
+            }
+          }
+        },
+        {
+          "match": {
+            "title": "elasticsearch"
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+#önceliği title a verceksek  boost kullancaz title a önceliği vermek için 
+#boost paramatresine 2 verdik content den daha öncelikli olması için
+#contentin boostu varsayılan olarak 1
+#title ında elastic search olanın score u daha fazla olcak
+#bu yüzden de başta gelcek
+#herhangi bir arama yaptığımızda search te title öncelikli olcak demek bu
+#ilk documanın score degeri yukarıdaki queryde 5 iken bu queryde 7 oldu
+
+GET /blogposts/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match": {
+            "title": {
+              "query": "elasticsearch",
+              "boost": 2
+            }
+            
+          }
+        },
+        {
+          "match": {
+            "content": "elasticsearch"
+          }
+        }
+        
+      ]
+    }
+  }
+}
+
+#bu şekilde 2 field içinde öncelik verebiliriz
+GET /blogposts/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "elasticsearch",
+      "fields": ["title","content"],
+      "boost": 2
+    }
+  }
+}
+
+#ikisinden birine vermek istiyorsak ^2 kullancaz
+#burda başka bir yol bir fielda boost vermek için
+#yani bu fielda aradığım değer içeriyorsa socre u daha fazla olcak demek
+
+GET /blogposts/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "elasticsearch",
+      "fields":["title^2","content"]
+      
+    }
+  }
+}
+
+
+
+
+#tüm dokumanlarda tags fieldında hangi kelime kaç defa geçiyor
+#tags fiedlının type ı keyword oludğu için direkt tags ditebiliyoruz
+#title olsaydı title.keyword diyecektik
+GET /blogposts/_search
+{
+  "aggs": {
+    "top_tags": {
+      "terms": {
+        "field": "tags",
+        "size": 10
+      }
+    }
+  }
+}
+
+
+
+
+#aşağıdaki searchte önce query çalışçak sonra aggs çalışcak
+#buda demek oluyorki ben sadece ilk query sonucunda dönen documanlar için aggregationu
+#yapıyorum
+#yani statusu published olan documanlar arasında taginde hangi kelime kaç defa geçmiş 
+#onu buluyorum
+GET /blogposts/_search
+{
+  "query": {
+    "term": {
+      "status": {
+        "value": "published"
+      }
+    }
+  }
+  , "aggs": {
+    "top_tags": {
+      "terms": {
+        "field": "tags",
+        "size": 10
+      }
+    }
+  }
+}
+
+
+
+#like sayısı 100 den fazla olan documanar için taginde hangi kelime kaç defa
+GET /blogposts/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "range": {
+            "no_of_likes": {
+              "gte": 100
+              
+            }
+          }
+        }
+      ]
+    }
+  },
+  "aggs": {
+    "top_tags": {
+      "terms": {
+        "field": "tags",
+        "size": 10
+      }
+    }
+  }
+}
+
+
+
+
+#post filterda hesaplıyor score 1.0 oluyor
+#ilk önce aggregation çalışıyor sonra post filter çalışıyor
+#buda demek oluyorki aggrgation tüm dokumanlar için uygulanıyor yine 
+#elasticsearch ü 9 görcez
+#sadece likes sayısı 100 den fazla olan(100dahil) dokumanların tagine bakmıyor
+#tüm documanların tagine bakıyor
+GET /blogposts/_search
+{
+  "post_filter": {
+    "range": {
+      "no_of_likes": {
+        "gte": 100
+      }
+    }
+  }, 
+  "aggs": {
+    "top_tags": {
+      "terms": {
+        "field": "tags",
+        "size": 10
+      }
+    }
+  }
+}
+
+#ilk önce query çalışcak sonra aggs çalışcak en son post_filter çalışcak
+#buda demek oluyorki hits de statusu published ve like sayısı 100 veya 100 den fazla olan docler gelcek
+#aggregation ise sadece statusu published olan docler için uygulancak
+GET /blogposts/_search
+{
+  
+  "query": {
+    "term": {
+      "status": {
+        "value": "published"
+      }
+    }
+  }, 
+  "post_filter": {
+    "range": {
+      "no_of_likes": {
+        "gte": 100
+      }
+    }
+  }, 
+  "aggs": {
+    "top_tags": {
+      "terms": {
+        "field": "tags",
+        "size": 10
+      }
+    }
+  }
+}
+
+
+
+#iç içe avg kullandık
+#top_tags agg i ana agg
+#avg_like agg i sub agg
+# tüm dokumanların tagine bakıp hangi kelime kaç defa geçmiş onu bulcak sonra 
+#diyelimki 9 documanın taginde toplamda 9 defa elasticserh geçmiş
+#bu 9 documanın likes sayısnın ortalamasını alcak
+GET /blogposts/_search
+{
+  "aggs": {
+    "top_tags": {
+      "terms": {
+        "field": "tags",
+        "size": 10
+      },
+      "aggs": {
+        "avg_like": {
+          "avg": {
+            "field": "no_of_likes"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+#minimum maximum ve countunuda alalım
+GET /blogposts/_search
+{
+  "aggs": {
+    "top_tags": {
+      "terms": {
+        "field": "tags",
+        "size": 10
+      },
+      "aggs": {
+        "avg_like": {
+          "avg": {
+            "field": "no_of_likes"
+          }
+        },
+        "min_like":{
+          "min": {
+            "field": "no_of_likes"
+          }
+        },
+        "max_like":{
+          "max": {
+            "field": "no_of_likes"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+#states i kullanrak max min count avg değerlerini beraber alabiliriz
+GET /blogposts/_search
+{
+  "aggs": {
+    "top_tags": {
+      "terms": {
+        "field": "tags",
+        "size": 10
+      },
+      "aggs": {
+        "stats_like": {
+          "stats": {
+            "field": "no_of_likes"
+          }
+        }
+      }
+    }
+  }
+}
+
+#3 tane range oluşturduk buda demk oluyorki 3 tane bucket oluşturduk
+# like sayısı 0 ve 100 arasında olan 12 doc varmış
+#100 ile 200 arasında olan 16 doc varmış 
+#200 ile 300 arasında olan 2 doc varmış
+GET blogposts/_search
+{
+  "aggs": {
+    "range_agg": {
+      "range": {
+        "field": "no_of_likes",
+        "ranges": [
+          {
+            "from": 0,
+            "to": 100
+          },
+          {
+            "from": 100,
+            "to": 200
+          },
+          {
+            "from": 200,
+            "to": 300
+          }
+          
+        ]
+      }
+    }
+  }
+}
+
+#her bir bucketdeki documanların like sayısı istatistiklerini almak için stats
+#kullancaz
+GET blogposts/_search
+{
+  "aggs": {
+    "range_agg": {
+      "range": {
+        "field": "no_of_likes",
+        "ranges": [
+          {
+            "from": 0,
+            "to": 100
+          },
+          {
+            "from": 100,
+            "to": 200
+          },
+          {
+            "from": 200,
+            "to": 300
+          }
+          
+        ]
+      },
+      "aggs": {
+        "range_stats": {
+          "stats": {
+            "field": "no_of_likes"
+          }
+        }
+      }
+        
+      }
+    }
+  }
+}
+
+#eğer çıktıda sadece aggregation olsun istiyorsak ozamn size ı 0 yapabiliriz
+GET blogposts/_search
+{
+  "size": 0, 
+  "aggs": {
+    "range_agg": {
+      "range": {
+        "field": "no_of_likes",
+        "ranges": [
+          {
+            "from": 0,
+            "to": 100
+          },
+          {
+            "from": 100,
+            "to": 200
+          },
+          {
+            "from": 200,
+            "to": 300
+          }
+          
+        ]
+      },
+      "aggs": {
+        "range_stats": {
+          "stats": {
+            "field": "no_of_likes"
+          }
+        }
+      }
+        
+      }
+    }
+  }
+
+
+#40 ay öncesi tarihle şimdii tarih arasında published date i olan kaç doc var
+GET /blogposts/_search
+{
+  "size": 0,
+  "aggs": {
+    "date_range": {
+      "date_range": {
+        "field": "published_date",
+        "ranges": [
+          {
+            "from": "now-40M/M",
+            "to": "now"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#bu tarihteki documanların like istatistikleri
+GET /blogposts/_search
+{
+  "size": 0,
+  "aggs": {
+    "date_range": {
+      "date_range": {
+        "field": "published_date",
+        "ranges": [
+          {
+            "from": "now-40M/M",
+            "to": "now"
+          }
+        ]
+      }
+      ,
+      "aggs": {
+        "like_stats": {
+          "stats": {
+            "field": "no_of_likes"
+          }
+        }
+      }
+    }
+  }
+}
+
+#ilk range yani ilk bucket çıktıdaki  published date i2015 -12-31 den önce olan docleri
+#gösteriyor
+#ikinci bucket de 2016-01-01 den bugüne olan docleri göseriyor
+GET /blogposts/_search
+{
+  "size": 0,
+  "aggs": {
+    "date_range": {
+      "date_range": {
+        "field": "published_date",
+        "ranges": [
+          {
+            "to": "2015-12-31"
+          },
+          
+          {
+            "from": "2016-01-01"
+          }
+        ]
+      }
+      ,
+      "aggs": {
+        "like_stats": {
+          "stats": {
+            "field": "no_of_likes"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+#her seferinde kendimiz range oluşturmamak için histogram kullancaz
+#bu bize 0 dan başlayarak 50 şer 50 şer artan rangeler oluşturcak
+GET blogposts/_search
+{
+  
+  "size": 0,
+  "aggs": {
+    "histo_aggs": {
+      "histogram": {
+        "field": "no_of_likes",
+        "interval": 50
+      }
+    }
+  }
+}
+
+
+
+#date histogram da var her yıl toplamda kaç tane dokuman publish edilmiş
+GET blogposts/_search
+{
+  
+  "size": 0,
+  "aggs": {
+    "histo_aggs": {
+      "date_histogram": {
+        "field": "published_date",
+        "interval": "year"
+      }
+    }
+  }
+}
+
+
+
+GET blogposts/_search
+{
+  
+  "size": 0,
+  "aggs": {
+    "histo_aggs": {
+      "date_histogram": {
+        "field": "published_date",
+        "interval": "year"
+      },
+      "aggs": {
+        "top_tags": {
+          "terms": {
+            "field": "tags",
+            "size": 10
+          },
+          "aggs": {
+            "stat_aggs": {
+              "stats": {
+                "field": "no_of_likes"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+GET /person/_search
+{
+  "query": {
+    "match_all": {}
+  
+  }
+}
+
+DELETE /deneme2
+
+GET /deneme2
+
+PUT /deneme2 
+{
+  "mappings" : {
+      "properties" : {
+        "asin" : {
+          "type" : "text","analyzer":"standard",
+          "fields": {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "helpful" : {
+          "type" : "long"
+        },
+        "overall" : {
+          "type" : "float"
+        },
+        "reviewText" : {
+          "type" : "text","analyzer":"standard",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "reviewTime" : {
+          "type" : "text","analyzer":"standard",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "reviewerID" : {
+          "type" : "text","analyzer":"standard",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "reviewerName" : {
+          "type" : "text","analyzer":"standard",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "summary" : {
+          "type" : "text","analyzer":"standard",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "unixtime_date" : {
+          "type" : "date",
+          "format": "strict_date_optional_time||epoch_second"
+        }
+      }
+    }
+}
+
+
+GET /deneme2/_search
+{
+  "query": {
+    "match_all": {}
+  
+  }
+}
+
+POST /deneme2/_doc
+{
+  "reviewerID": "A2SUAM1J3GNN3B",
+  "asin": "0000013714",
+  "reviewerName": "J. McDonald",
+  "helpful": [2, 3],
+  "reviewText":"abc",
+  "overall": 5.0,
+  "summary": "Heavenly Highway Hymns",
+  "unixReviewTime": 1252800000,
+  "reviewTime": "09 13, 2009"
+}
+POST deneme/_search
+{
+  "fields": [ {"field": "unixReviewTime"}],
+  "_source": false
+}
+
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "date": {
+        "type":   "date",
+        "format": "strict_date_optional_time||epoch_second"
+      }
+    }
+  }
+}
+
+PUT my-index-000001/_doc/example?refresh
+{ "date": 1252800000 }
+
+POST deneme2/_search
+{
+  "fields": [ {"field": "unixtime_date"}],
+  "_source": false
+}
+
+
+
+#Indexleme işlemi bittiğinde toplam yorum sayısını ve tarih’e göre azalan sırada sıralanmış ilk 10 kaydın listesi çekilmeledir.
+
+GET /deneme2/_search
+{
+  "size":5, 
+  "sort": [
+    {
+      "unixtime_date": {
+        "order": "desc"
+      }
+    }
+  ],
+  "aggs": {
+    "sum_comment": {
+      "AGG_TYPE": {}
+    }
+  }
+
+}
+
+GET /deneme2/_search
+{
+  "sort": [
+    {
+      "unixtime_date": {
+        "order": "desc"
+      }
+    }
+  ],
+  "aggs": {
+    "unixtime": {
+      "terms": {
+        "field": "unixtime_date",
+        "size": 10
+      },
+      "aggs": {
+        "sum_count": {
+          "sum": {
+            "field": "helpful"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+GET /deneme2/_search
+{
+  "size": 0, 
+  "aggs": {
+    "date": {
+      "date_histogram": {
+        "field": "unixtime_date",
+        "interval": "day"
+      },
+      "aggs": {
+        "sum_comment": {
+          "terms": {
+            "field": "reviewText.keyword",
+            "size": 10
+          }
+        }
+      }
+    }
+  }
+  , "sort": [
+    {
+      "unixtime_date": {
+        "order": "asc"
+      }
+    }
+  ]
+}
+
+GET /deneme2/_search
+{
+  "size": 0,
+  "aggs": {
+    "date_buckets": {
+      "terms": {
+        "field": "unixtime_date",
+        "size": 10
+      },
+      "aggs": {
+        "date_sort": {
+          "bucket_sort":{
+            "sort": [
+              { "doc_count": { "order": "asc" } }
+            ]
+          }
+        }
+      }
+    }
+  }
+
+}
+
+
+#3-)Indexleme işlemi bittiğinde toplam yorum sayısını ve tarih’e göre azalan sırada sıralanmış ilk 10 kaydın listesi çekilmeledir.
+
+GET /deneme2/_search
+{
+  "size": 0,
+  "aggs": {
+    "date_buckets": {
+      "terms": {
+        "field": "unixtime_date",
+        "size": 10,
+        "order": { "_key" : "desc" }
+      }
+    }
+  }
+}
+
+
+
+
+
+#4-)İçerisinde card veya game içeren yorumların sayısını ve ilk 20 yorumı tarih ve overall alanına göre ASC olacak şekilde sıralayarak çekilmelidir ve dönen yorumda sadece reviewerID, reviewerName, summary,özel alan,unixtime_date  alanları olmalıdır
+
+GET /deneme2/_search
+{
+  "size":0, 
+  "query": {
+    "match": {
+      "reviewText": "card game"
+    }
+  },
+  "aggs": {
+    "date_and_overall": {
+      "multi_terms": {
+        "terms": [{
+          "field": "unixtime_date"},
+          {"field": "overall"}
+        ],
+        "size":20,
+        "order":{ "_key" : "asc" }
+      },
+      "aggs": {
+        "specific_fields": {
+          "top_hits": {
+            "_source": {
+              "excludes": ["helpful","overall","reviewTime","asin","reviewText"]
+            }, 
+            "size": 1
+          }
+        }
+      }
+    }
+  }
+}
+
+#5-)Ürün puani 3.5’ten yüksek olan puan kırılımlarının toplam yorum sayılarını bulunuz.
+
+GET deneme2/_search
+{
+  "size": 0, 
+  "query": {
+    "bool": {
+    "filter": [
+      {
+        "range": {
+          "overall": {
+            "gte": 3.5
+          }
+        }
+      }
+    ]
+    }
+  },
+  "aggs": {
+    "overall_buckets": {
+      "terms": {
+        "field": "overall",
+        "size": 10
+      }
+    }
+  }
+}
+
+#Yorum metni alanında en çok geçen ilk 50 terimi bulunuz.
+GET deneme2/_search
+{
+  "size":0,
+  "aggs": {
+    "word_count": {
+      "terms": {
+        "field": "reviewText.keyword",
+        "size": 50,
+        "order": {
+          "_count": "desc"
+        }
+      }
+    }
+  }
+}
+GET abc/_search
+{
+  "size":0,
+  "aggs": {
+    "word_count": {
+      "significant_text": {
+        "field": "text",
+        "size": 50
+        }
+      }
+    }
+  }
+}
+
+
+
+#analyzerı test etme
+POST _analyze
+{
+  "analyzer": "standard",
+  "text": "\"...All we need is just a little patience...\"I won't lie...you'll need a LOT.Each year at our family reunion, there's one room which is reserved as the \"Puzzle Room\". When I opened up this box, everyone knew this would be no easy task.This is another fine puzzle from the Ravensburger folks. The challenge is daunting, it's got their \"softclick\" technology (which got a few laughs from my nieces and nephews), and the finished product is absolutely breathtaking.Most puzzle enthusiasts will assemble the outer edges first and then work on finding something to focus their efforts on, such as a lake or a tree. With this particular puzzle, that option doesn't last long. After the edges and the castle were put together, I found it to be more of a \"work toward the middle\" type of task.This puzzle demands a lot of attention to detail - there are many ways to confuse pieces of the clouds with pieces of the snowy landscape, pieces of the lake to be confused with the rolling hills, and so forth. The placement of the large tree on the right side was particularly difficult to work with, because the color of the branches were present in several different areas of the picture.Sadly, this is the first time we didn't finish a puzzle during our reunion week. I staked out a dining room tabletop to finish this later, which took over a month.If you really, REALLY want a challenging puzzle, this one is just what the doctor ordered...don't forget to use a little patience."
+}
+
+# Happy ve price kelimelerini en fazla 10 kelime uzaklıkta olduğu yorumları çıkartınız.
+
+
+
+#analyzer oluşturma
+
+DELETE /analiz
+
+PUT /analiz
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_custom_analyzerr":{
+          "type":"custom",
+          "tokenizer":"standard",
+          "char_filter":["symbol"],
+          "filter":["my_stop","lowercase"]
+          
+        }
+      },
+      "char_filter": {
+        "symbol":{
+          "type":"mapping",
+          "mappings":[
+             => 
+          ]
+          
+        }
+      },
+      "filter": {
+        "my_stop":{
+          "type":"stop",
+          "stopwords": "_english_"
+        }
+      }
+    }
+  }
+}
+
+
+
+POST /blogposts/_analyze
+{
+  "analyzer": "stop",
+  "text": "\"...All we need is just a little patience...\"I won't lie...you'll need a LOT.Each year at our family reunion, there's one room which is reserved as the \"Puzzle Room\". When I opened up this box, everyone knew this would be no easy task.This is another fine puzzle from the Ravensburger folks. The challenge is daunting, it's got their \"softclick\" technology (which got a few laughs from my nieces and nephews), and the finished product is absolutely breathtaking.Most puzzle enthusiasts will assemble the outer edges first and then work on finding something to focus their efforts on, such as a lake or a tree. With this particular puzzle, that option doesn't last long. After the edges and the castle were put together, I found it to be more of a \"work toward the middle\" type of task.This puzzle demands a lot of attention to detail - there are many ways to confuse pieces of the clouds with pieces of the snowy landscape, pieces of the lake to be confused with the rolling hills, and so forth. The placement of the large tree on the right side was particularly difficult to work with, because the color of the branches were present in several different areas of the picture.Sadly, this is the first time we didn't finish a puzzle during our reunion week. I staked out a dining room tabletop to finish this later, which took over a month.If you really, REALLY want a challenging puzzle, this one is just what the doctor ordered...don't forget to use a little patience."
+  
+}
+
+PUT abc 
+{
+  "mappings": {
+    "properties": {
+      "text":{
+        "type": "keyword"
+      }
+    }
+  }
+}
+
+PUT /abc/_doc/1
+{
+  "text":"\"...All we need is just a little patience...\"I won't lie...you'll need a LOT.Each year at our family reunion, there's one room which is reserved as the \"Puzzle Room\". When I opened up this box, everyone knew this would be no easy task.This is another fine puzzle from the Ravensburger folks. The challenge is daunting, it's got their \"softclick\" technology (which got a few laughs from my nieces and nephews), and the finished product is absolutely breathtaking.Most puzzle enthusiasts will assemble the outer edges first and then work on finding something to focus their efforts on, such as a lake or a tree. With this particular puzzle, that option doesn't last long. After the edges and the castle were put together, I found it to be more of a \"work toward the middle\" type of task.This puzzle demands a lot of attention to detail - there are many ways to confuse pieces of the clouds with pieces of the snowy landscape, pieces of the lake to be confused with the rolling hills, and so forth. The placement of the large tree on the right side was particularly difficult to work with, because the color of the branches were present in several different areas of the picture.Sadly, this is the first time we didn't finish a puzzle during our reunion week. I staked out a dining room tabletop to finish this later, which took over a month.If you really, REALLY want a challenging puzzle, this one is just what the doctor ordered...don't forget to use a little patience."
+}
+
+
+DELETE abc
+
+PUT /abc/_doc/2
+{
+  "text":"\"A Creativity Tool for Innovators\" is great marketingspeak, but it's a lie.After making a few patterns over the course of a few days, you and your kids will grow bored by this thing. It's more like a toy you'd buy on a lark at a dollar store; \"It looks fun, and it's only a buck.\"At this price range, I expect some longevity or some real true fun, and this thing provides neither.***EDIT (three years later)*** -- my two year old boy  is now turning five, and he can't get enough of this thing, mostly because it's a BALL THAT \"EXPLODES\" when you throw it or drop it."
+}
+
+GET deneme2
+
+
+
+#bunun önüne slop kullanarak geçebiliriz
+#documanımdak title da Introduction to elasticsearch ifadesi var
+# introduction 0 to 1 elasticsearch 2 .pozisyonda
+#query de introduction elasticsearch ifadesi var
+#introduction 0 elasticsearch 1 .pozisyonda bu şekilde eşleşmiyolar
+#ama slop kullanarak elasticsearch kendi pozisyonundan 1 pozisyon ileri giderek 2.pozisyona geliyor ve
+#eşleşiyolar eşleşmesi için doc deki pozisyonlarda aynı olmalı query de bulunan kelimeler
+GET /blogposts/_search
+{
+  "query": {
+    "match_phrase": {
+      "title": {
+        "query": "Introduction elasticsearch",
+        "slop": 1
+      }
+    }
+  }
+}
+
+#8-)Happy ve price kelimelerini en fazla 10 kelime uzaklıkta olduğu yorumları çıkartınız.
+
+GET /deneme2/_search
+{
+  "query": {
+    "match_phrase": {
+      "reviewText": {
+        "query": "happy price",
+        "slop": 10
+      }
+    }
+  }
+}
+
+#9-)Aranılan bir kelimeyi reviewText alanında highlight eden sorguyu yazırlayınız.
+GET /deneme2/_search
+{
+  "query": {
+    "match": {
+      "reviewText": "price"
+    }
+  },
+  "highlight": {"fields": {
+    "reviewText": {}
+  }},
+  "_source": {
+    "includes": "reviewText"
+  }
+}
+
+#2009 ve 2011 yıllarına ait yorum sayılarını bulunuz ve bu yıllara ait verileri siliniz.
+
+GET /deneme2/_search
+{
+  "size": 0,
+  "aggs": {
+    "date_range": {
+      "date_range": {
+        "field": "unixtime_date",
+        "ranges": [
+          {
+            "from": "2009-01-01", 
+            "to": "2009-12-31"
+          },
+          {
+            "from": "2011-01-01", 
+            "to": "2011-12-31"
+          }
+        ]
+      }
+    }
+  }
+}
+
+
+POST deneme2/_delete_by_query
+{
+  "query":
+  {
+    
+    
+    "date_range": {
+      
+      "field": "unixtime_date",
+      "ranges": [
+        
+        {
+          
+          "from": "2009-01-01", 
+          "to": "2009-12-31"
+        },
+        {
+          "from": "2011-01-01", 
+          "to": "2011-12-31"
+        }
+        ]
+    }
+  }
+
+}
+
+
+POST deneme2/_delete_by_query
+{
+  "query": {
+    "bool": {
+      
+      "range" : {
+        "unixtime_date" : {
+          "gte" : "2011-01-01", 
+          "lte": "2011-12-31"
+        }
+      },
+      "range" : {
+        "unixtime_date" : {
+          "gte" : "2011-01-01", 
+          "lte": "2011-12-31"
+          }
+      } 
+    }
+  }
+}
+
+
+#2009 ve 2011 yıllarına ait yorum sayılarını bulunuz ve bu yıllara ait verileri siliniz
+POST /deneme2/_delete_by_query
+{
+  "query":{
+    "bool":{
+      "should":[
+        {
+          "range": {
+            "unixtime_date": 
+            {
+              "gte": "2011-01-01",
+              "lte":"2011-12-31"
+            }
+          }
+        },
+        {
+          "range": {
+            
+            "unixtime_date": {
+              
+              "gte": "2009-01-01",
+              "lte": "2009-12-31"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+DELETE deneme2
+
+#6-)2012 yılı içerisinde en fazla yorum yapan ilk 10 reviwer’ı ve en çok yorum yazdıkları ilk 3 yorumu ve özel alanı aggr kullanarak listeleyeniz.
+
+GET deneme2/_search
+{
+  "size": 0, 
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "range": {
+            "unixtime_date": {
+              "gte": "2012-01-01",
+              "lte": "2012-12-31"
+            }
+          }
+        }
+      ]
+    }
+  }
+  , "aggs": {
+    "most review": {
+      "terms": {
+        "field": "reviewerID.keyword",
+        "size": 10,
+        "order": {
+          "_count": "desc"
+        }
+      },
+      "aggs": {
+        "comment": {
+          "terms": {
+            "field": "reviewText.keyword",
+            "size": 3,
+            "order": {
+              "_count": "desc"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+##7-)Yorum metni alanında en çok geçen ilk 50 terimi bulunuz.
+GET deneme2/_search
+{
+  "size": 0, 
+  "aggs": {
+    "keywords": {
+      "significant_text": {
+        "field": "reviewText",
+        "size": 50,
+        "script_heuristic": {
+          "script": 
+          {
+            "lang": "painless",
+            "source": "params._superset_freq + 0f"
+          }
+            
+        }
+      }
+    }
+  }
+}
+
+DELETE ozelalan
+
+#özel alan eklemek için index
+
+PUT /ozelalan 
+{
+  "mappings" : {
+      "properties" : {
+        "asin" : {
+          "type" : "text","analyzer":"standard",
+          "fields": {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "helpful" : {
+          "type" : "long"
+        },
+        "overall" : {
+          "type" : "float"
+        },
+        "reviewText" : {
+          "type" : "text","analyzer":"standard",
+          "fields" : 
+          {
+            "keyword" : {
+              "type" : "keyword"
+            },
+            "name" :{
+              "type":"text"
+            }
+          }
+        },
+        "reviewTime" : {
+          "type" : "text","analyzer":"standard",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "reviewer" : {
+          "properties": {
+            "reviewerID ":{
+              "type":"text",
+              "fields":{
+                "keyword":{
+                  "type":"keyword"
+                }
+              }
+            },
+            "ozel_alan":{
+              "type":"text",
+              "fields":{
+                "keyword":{
+                  "type":"keyword"
+                }
+              }
+            }
+          }
+        },
+        "reviewerName" : {
+          "type" : "text","analyzer":"standard",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "summary" : {
+          "type" : "text","analyzer":"standard",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "unixtime_date" : {
+          "type" : "date",
+          "format": "strict_date_optional_time||epoch_second"
+        }
+      }
+    }
+}
+
+
+
+#ödev için index son hali
+
+PUT /ozelalan 
+{
+  "mappings" : {
+      "properties" : {
+        "asin" : {
+          "type" : "text","analyzer":"standard",
+          "fields": {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "helpful" : {
+          "type" : "long"
+        },
+        "overall" : {
+          "type" : "float"
+        },
+        "reviewText" : {
+          "type" : "text","analyzer":"standard",
+          "fields" : 
+          {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "reviewTime" : {
+          "type" : "text","analyzer":"standard",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "reviewer" : {
+          "properties": {
+            "reviewerID":{
+              "type":"text",
+              "fields":{
+                "keyword":{
+                  "type":"keyword"
+                }
+              }
+            },
+            "ozel_alan":{
+              "type":"text",
+              "fields":{
+                "keyword":{
+                  "type":"keyword"
+                }
+              }
+            }
+          }
+        },
+        "reviewerName" : {
+          "type" : "text","analyzer":"standard",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "summary" : {
+          "type" : "text","analyzer":"standard",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "unixtime_date" : {
+          "type" : "date",
+          "format": "strict_date_optional_time||epoch_second"
+        }
+      }
+    }
+}
+
+
+
+#3-)Indexleme işlemi bittiğinde toplam yorum sayısını ve tarih’e göre azalan sırada sıralanmış ilk 10 kaydın listesi çekilmeledir.
+
+GET /ozelalan/_search
+{
+  "size": 0,
+  "aggs": {
+    "date_buckets": {
+      "terms": {
+        "field": "unixtime_date",
+        "size": 10,
+        "order": { "_key" : "desc" }
+      }
+    }
+  }
+}
+
+#4-)İçerisinde card veya game içeren yorumların sayısını ve ilk 20 yorumı tarih ve overall alanına göre ASC olacak şekilde sıralayarak çekilmelidir ve dönen yorumda sadece reviewerID, reviewerName, summary,özel alan,unixtime_date  alanları olmalıdır
+
+GET /ozelalan/_search
+{
+  "size":0, 
+  "query": {
+    "match": {
+      "reviewText": "card game"
+    }
+  },
+  "aggs": {
+    "date_and_overall": {
+      "multi_terms": {
+        "terms": [{
+          "field": "unixtime_date"},
+          {"field": "overall"}
+        ],
+        "size":20,
+        "order":{ "_key" : "asc" }
+      },
+      "aggs": {
+        "specific_fields": {
+          "top_hits": {
+            "_source": {
+              "includes": ["reviewer.reviewerID","reviewer.ozel_alan","reviewerName","summary","unixtime_date"]
+            }, 
+            "size": 1
+          }
+        }
+      }
+    }
+  }
+}
+
+#5-)Ürün puani 3.5’ten yüksek olan puan kırılımlarının toplam yorum sayılarını bulunuz.
+
+GET ozelalan/_search
+{
+  "size": 0, 
+  "query": {
+    "bool": {
+    "filter": [
+      {
+        "range": {
+          "overall": {
+            "gte": 3.5
+          }
+        }
+      }
+    ]
+    }
+  },
+  "aggs": {
+    "overall_buckets": {
+      "terms": {
+        "field": "overall",
+        "size": 10
+      }
+    }
+  }
+}
+
+#6-)2012 yılı içerisinde en fazla yorum yapan ilk 10 reviwer’ı ve en çok yorum yazdıkları ilk 3 yorumu ve özel alanı aggr kullanarak listeleyeniz.
+
+GET ozelalan/_search
+{
+  "size": 0, 
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "range": {
+            "unixtime_date": {
+              "gte": "2012-01-01",
+              "lte": "2012-12-31"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "aggs": {
+    "most_reviewer": {
+      "terms": {
+        "field": "reviewer.reviewerID.keyword",
+        "size": 10,
+        "order": {
+          "_count": "desc"
+        }
+      },
+      "aggs": {
+        "comment": {
+          "terms": {
+            "field": "reviewText.keyword",
+            "size": 3,
+            "order": {
+              "_count": "desc"
+            }
+          },
+          "aggs": {
+            "specific_fields": {
+              "top_hits": {
+                "_source": {
+                  "includes": ["reviewer.ozel_alan"]
+                }
+             }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+##7-)Yorum metni alanında en çok geçen ilk 50 terimi bulunuz.
+GET deneme2/_search
+{
+  "size": 0, 
+  "aggs": {
+    "keywords": {
+      "significant_text": {
+        "field": "reviewText",
+        "size": 50,
+        "script_heuristic": {
+          "script": 
+          {
+            "lang": "painless",
+            "source": "params._superset_freq + 0f"
+          }
+            
+        }
+      }
+    }
+  }
+}
+
+#8-)Happy ve price kelimelerini en fazla 10 kelime uzaklıkta olduğu yorumları çıkartınız.
+
+GET /ozelalan/_search
+{
+  "query": {
+    "match_phrase": {
+      "reviewText": {
+        "query": "happy price",
+        "slop": 10
+      }
+    }
+  }
+}
+
+#9-)Aranılan bir kelimeyi reviewText alanında highlight eden sorguyu yazırlayınız.
+GET /ozelalan/_search
+{
+  "query": {
+    "match": {
+      "reviewText": "price"
+    }
+  },
+  "highlight": {"fields": {
+    "reviewText": {}
+  }},
+  "_source": {
+    "includes": "reviewText"
+  }
+}
+
+#2009 ve 2011 yıllarına ait yorum sayılarını
+GET /ozelalan/_search
+{
+  "size": 0,
+  "aggs": {
+    "date_range": {
+      "date_range": {
+        "field": "unixtime_date",
+        "ranges": [
+          {
+            "from": "2009-01-01", 
+            "to": "2009-12-31"
+          },
+          {
+            "from": "2011-01-01", 
+            "to": "2011-12-31"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#2009 ve 2011 yıllarına ait yorum sayılarını siliniz
+POST /ozelalan/_delete_by_query
+{
+  "query":{
+    "bool":{
+      "should":[
+        {
+          "range": {
+            "unixtime_date": 
+            {
+              "gte": "2011-01-01",
+              "lte":"2011-12-31"
+            }
+          }
+        },
+        {
+          "range": {
+            
+            "unixtime_date": {
+              
+              "gte": "2009-01-01",
+              "lte": "2009-12-31"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+GET /ozelalan
+
+GET /ozelalan/_search 
+{
+  "query": {
+    
+    "match_all": {}
+      
+  },
+  
+  "size": 32
+  
+}
+
+DELETE ozelalan
+PUT /ozelalan
+{
+  "mappings": {
+    "_parent": {
+      "type": ""
+    }
+  }
+}
